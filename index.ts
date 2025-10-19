@@ -4,7 +4,7 @@
  */
 
 import { AnkiDatabase } from './database.js';
-import { ApkgZipWriter, MediaEntry, buildMediaManifest } from './zip-writer.js';
+import { ApkgZipWriter, buildMediaManifest } from './zip-writer.js';
 import { extractMediaFilenames } from './utils.js';
 import type { AnkiModel, AnkiDeck, AnkiNote, MediaResolver } from './types.js';
 
@@ -64,14 +64,12 @@ export class AnkiPackageWriter {
       // Step 5: Export database
       const dbData = this.db.export();
 
-      // Step 6: Write media files to ZIP (asynchronously)
-      await this.writeMediaFiles();
-
-      // Step 7: Add database to ZIP
-      await this.zipWriter.addDatabase(dbData);
-
-      // Step 8: Add media manifest
-      await this.writeMediaManifest();
+      // Steps 6-8: Write media files, database, and manifest in parallel
+      await Promise.all([
+        this.writeMediaFiles(),
+        this.zipWriter.addDatabase(dbData),
+        this.writeMediaManifest()
+      ]);
 
       // Step 9: Finalize ZIP
       await this.zipWriter.finalize();
@@ -108,19 +106,18 @@ export class AnkiPackageWriter {
       return;
     }
 
-    // Create media entries with streams
-    const mediaEntries: MediaEntry[] = [];
-
-    for (let i = 0; i < filenames.length; i++) {
-      const filename = filenames[i];
+    // Fetch all media streams in parallel
+    const mediaPromises = filenames.map(async (filename, index) => {
       const stream = await this.mediaResolver(filename);
-
-      mediaEntries.push({
-        index: i,
+      console.log(`Added media file to ZIP: ${filename} (index: ${index})`);
+      return {
+        index,
         filename,
         stream
-      });
-    }
+      };
+    });
+
+    const mediaEntries = await Promise.all(mediaPromises);
 
     // Write all media files to ZIP
     // The ZIP writer will handle parallel processing
