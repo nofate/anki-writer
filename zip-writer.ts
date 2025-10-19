@@ -58,14 +58,14 @@ export class ApkgZipWriter {
       // Ensure stream is a Node.js Readable, not Web API ReadableStream
       const readableStream = stream instanceof Readable ? stream : Readable.from(stream as any);
 
-      // archiver handles the stream internally
-      this.archive.append(readableStream, { name: index.toString() });
-
-      // archiver emits 'entry' when file is added
-      this.archive.once('entry', () => resolve());
-
       // Handle stream errors
       readableStream.once('error', reject);
+
+      // Wait for stream to end before resolving
+      readableStream.once('end', () => resolve());
+
+      // archiver handles the stream internally and will queue it
+      this.archive.append(readableStream, { name: index.toString() });
     });
   }
 
