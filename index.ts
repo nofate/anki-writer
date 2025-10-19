@@ -106,22 +106,15 @@ export class AnkiPackageWriter {
       return;
     }
 
-    // Fetch all media streams in parallel
-    const mediaPromises = filenames.map(async (filename, index) => {
+    // Fetch and write each media file to ZIP as soon as it's ready
+    const writePromises = filenames.map(async (filename, index) => {
       const stream = await this.mediaResolver(filename);
+      await this.zipWriter.addMediaFile(index, stream);
       console.log(`Added media file to ZIP: ${filename} (index: ${index})`);
-      return {
-        index,
-        filename,
-        stream
-      };
     });
 
-    const mediaEntries = await Promise.all(mediaPromises);
-
-    // Write all media files to ZIP
-    // The ZIP writer will handle parallel processing
-    await this.zipWriter.addMediaFiles(mediaEntries);
+    // Wait for all media files to be written
+    await Promise.all(writePromises);
   }
 
   /**
