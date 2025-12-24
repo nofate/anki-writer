@@ -117,8 +117,8 @@ CREATE INDEX ix_graves_usn ON graves (usn);
 export class AnkiDatabase {
   private db: SqlJsDatabase | null = null;
   private idGen: IdGenerator;
-  private models: Map<number, AnkiModel> = new Map();
-  private decks: Map<number, AnkiDeck> = new Map();
+  private models: Map<number, AnkiModel> = new Map<number, AnkiModel>();
+  private decks: Map<number, AnkiDeck> = new Map<number, AnkiDeck>();
   private initialized = false;
 
   constructor() {

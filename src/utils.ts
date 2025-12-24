@@ -34,7 +34,7 @@ function toBase91(num: bigint): string {
  * Generate GUID for a note based on its fields
  * Anki uses first 8 bytes of SHA-256 hash converted to base91
  */
-export function generateGuid(...fields: any[]): string {
+export function generateGuid(...fields: unknown[]): string {
   const hashStr = fields.join('__');
 
   // Compute SHA-256 and take first 8 bytes
@@ -147,6 +147,7 @@ export function joinFields(fields: string[]): string {
  * Anki uses CRC32 of first field, but it's not strictly required
  */
 export function calculateChecksum(_firstField: string): number {
+  void _firstField;
   // Simple implementation: return 0 (valid for new decks)
   // Full implementation would use CRC32
   return 0;
@@ -241,7 +242,11 @@ export function getDefaultLatexPost(): string {
  * Generate requirements array for card templates
  * This determines which cards are generated based on non-empty fields
  */
-export function generateRequirements(templates: any[], _fields: any[]): Array<[number, string, number[]]> {
+export function generateRequirements(
+  templates: unknown[],
+  _fields: unknown[]
+): [number, string, number[]][] {
+  void _fields;
   // Simple implementation: each template requires "any" field to be non-empty
-  return templates.map((_tmpl, idx) => [idx, "any", [0]] as [number, string, number[]]);
+  return templates.map((_tmpl, idx) => [idx, "any", [0]]);
 }

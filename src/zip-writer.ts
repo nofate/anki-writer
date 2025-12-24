@@ -12,7 +12,7 @@ import { Readable } from 'node:stream';
 export interface MediaEntry {
   index: number;
   filename: string;
-  stream: NodeJS.ReadableStream;
+  stream: NodeJS.ReadableStream | AsyncIterable<Uint8Array> | Iterable<Uint8Array>;
 }
 
 /**
@@ -39,24 +39,28 @@ export class ApkgZipWriter {
   /**
    * Add collection.anki2 database file
    */
-  async addDatabase(data: Uint8Array): Promise<void> {
+  addDatabase(data: Uint8Array): Promise<void> {
     if (this.finalized) throw new Error('Archive already finalized');
 
     // Convert Uint8Array to Buffer for archiver
     const buffer = Buffer.from(data);
 
     this.archive.append(buffer, { name: 'collection.anki2' });
+    return Promise.resolve();
   }
 
   /**
    * Add a media file with numeric name (0, 1, 2, ...)
    */
-  async addMediaFile(index: number, stream: NodeJS.ReadableStream): Promise<void> {
+  addMediaFile(
+    index: number,
+    stream: NodeJS.ReadableStream | AsyncIterable<Uint8Array> | Iterable<Uint8Array>
+  ): Promise<void> {
     if (this.finalized) throw new Error('Archive already finalized');
 
     return new Promise((resolve, reject) => {
       // Ensure stream is a Node.js Readable, not Web API ReadableStream
-      const readableStream = stream instanceof Readable ? stream : Readable.from(stream as any);
+      const readableStream = stream instanceof Readable ? stream : Readable.from(stream);
 
       // Handle stream errors
       readableStream.once('error', reject);
@@ -77,9 +81,7 @@ export class ApkgZipWriter {
     if (this.finalized) throw new Error('Archive already finalized');
 
     // Process media files - archiver handles internal queueing
-    const promises = entries.map(entry =>
-      this.addMediaFile(entry.index, entry.stream)
-    );
+    const promises = entries.map((entry) => this.addMediaFile(entry.index, entry.stream));
 
     await Promise.all(promises);
   }
@@ -87,11 +89,12 @@ export class ApkgZipWriter {
   /**
    * Add media manifest (media.json)
    */
-  async addMediaManifest(manifest: Record<string, string>): Promise<void> {
+  addMediaManifest(manifest: Record<string, string>): Promise<void> {
     if (this.finalized) throw new Error('Archive already finalized');
 
     const json = JSON.stringify(manifest);
     this.archive.append(json, { name: 'media' });
+    return Promise.resolve();
   }
 
   /**
@@ -121,10 +124,10 @@ export class ApkgZipWriter {
 /**
  * Helper function to convert async iterable to array
  */
-export async function collectMediaFilenames(
+export function collectMediaFilenames(
   fields: string[],
   extractFn: (content: string) => string[]
-): Promise<Set<string>> {
+): Set<string> {
   const filenames = new Set<string>();
 
   for (const field of fields) {

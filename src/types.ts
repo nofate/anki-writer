@@ -45,9 +45,9 @@ export interface AnkiModel {
   latexPre?: string;
   latexPost?: string;
   latexsvg?: boolean;
-  req?: Array<[number, string, number[]]>;  // Requirements for card generation
+  req?: [number, string, number[]][];  // Requirements for card generation
   tags?: string[];
-  vers?: any[];
+  vers?: unknown[];
 }
 
 /**

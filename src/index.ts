@@ -29,7 +29,7 @@ export class AnkiPackageWriter {
   private deck: AnkiDeck;
   private notes: AnkiNote[];
   private mediaResolver: MediaResolver;
-  private mediaFiles: Set<string> = new Set();
+  private mediaFiles: Set<string> = new Set<string>();
 
   constructor(options: CreatePackageOptions) {
     this.model = options.model;
