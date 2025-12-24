@@ -1,5 +1,7 @@
 # Anki .apkg Writer for TypeScript
 
+[![CI](https://github.com/nofate/anki-writer/actions/workflows/ci.yml/badge.svg)](https://github.com/nofate/anki-writer/actions/workflows/ci.yml)
+
 A modern, streaming TypeScript implementation for generating Anki `.apkg` files without using disk space. Designed for Node.js 22+ with full streaming support for efficient memory usage.
 
 ## Features

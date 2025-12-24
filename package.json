@@ -25,7 +25,7 @@
     "streaming",
     "typescript"
   ],
-  "author": "",
+  "author": "https://github.com/nofate/",
   "license": "MIT",
   "dependencies": {
     "archiver": "^7.0.1",
