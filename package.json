@@ -13,7 +13,9 @@
     "dev": "tsc --watch",
     "example": "tsx example.ts",
     "lint": "eslint . --ext .ts",
-    "format": "prettier --write \"**/*.ts\""
+    "format": "prettier --write \"**/*.ts\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "anki",
@@ -38,6 +40,7 @@
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",
     "tsx": "^4.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.16"
   }
 }

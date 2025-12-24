@@ -18,7 +18,7 @@ export default [
       },
       parser: tsParser,
       parserOptions: {
-        project: './tsconfig.json',
+        project: ['./tsconfig.json', './tsconfig.vitest.json'],
         tsconfigRootDir: import.meta.dirname,
       },
     },
