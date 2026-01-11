@@ -62,11 +62,21 @@ export class ApkgZipWriter {
       // Ensure stream is a Node.js Readable, not Web API ReadableStream
       const readableStream = stream instanceof Readable ? stream : Readable.from(stream);
 
-      // Handle stream errors
-      readableStream.once('error', reject);
+      // Set up error handler
+      readableStream.once('error', (err) => {
+        reject(err);
+      });
 
-      // Wait for stream to end before resolving
-      readableStream.once('end', () => resolve());
+      // Set up end handler - must be before append() call
+      readableStream.once('end', () => {
+        resolve();
+      });
+
+      // Check if stream is already ended/destroyed
+      if (readableStream.readableEnded || readableStream.destroyed) {
+        resolve();
+        return;
+      }
 
       // archiver handles the stream internally and will queue it
       this.archive.append(readableStream, { name: index.toString() });
@@ -104,12 +114,23 @@ export class ApkgZipWriter {
     if (this.finalized) throw new Error('Archive already finalized');
 
     this.finalized = true;
-    await this.archive.finalize();
 
-    // Wait for output stream to finish
+    // Wait for both archive finalization AND output stream to finish
     return new Promise((resolve, reject) => {
+      // Set up output stream listeners first
       this.output.once('finish', resolve);
       this.output.once('error', reject);
+
+      // Set up archive listener for completion
+      this.archive.once('end', () => {
+        // Archive has written everything to output stream
+        // Output stream should emit 'finish' soon
+      });
+
+      this.archive.once('error', reject);
+
+      // Finalize the archive (this starts the finalization process)
+      this.archive.finalize().catch(reject);
     });
   }
 
