@@ -51,7 +51,7 @@ The package generation follows this sequence:
 - **[types.ts](types.ts)**: TypeScript interfaces for models, decks, notes, and configuration
 - **[utils.ts](utils.ts)**: ID generation, GUID creation (SHA-256 + Base91), media extraction, timestamp utilities
 - **[database.ts](database.ts)**: SQLite schema creation and data insertion using sql.js (in-memory)
-- **[zip-writer.ts](zip-writer.ts)**: Streaming ZIP creation using archiver library
+- **[zip-writer.ts](zip-writer.ts)**: Streaming ZIP creation using fflate library
 - **[index.ts](index.ts)**: Main `AnkiPackageWriter` class that orchestrates the flow
 
 ### Key Design Patterns
@@ -127,7 +127,7 @@ const model = {
 
 **Production**:
 - `sql.js` - WebAssembly SQLite for in-memory database
-- `archiver` - Streaming ZIP creation
+- `fflate` - Streaming ZIP creation
 
 **Development**:
 - `tsx` - TypeScript execution for examples

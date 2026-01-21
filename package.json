@@ -10,6 +10,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:meta": "esbuild src/index.ts --bundle --platform=node --format=esm --outdir=dist-meta --metafile=meta.json",
     "dev": "tsc --watch",
     "example": "tsx example.ts",
     "lint": "eslint . --ext .ts",
@@ -28,16 +29,16 @@
   "author": "https://github.com/nofate/",
   "license": "MIT",
   "dependencies": {
-    "archiver": "^7.0.1",
+    "fflate": "^0.8.2",
     "sql.js": "^1.11.0"
   },
   "devDependencies": {
-    "@types/archiver": "^6.0.2",
     "@types/node": "^22.0.0",
     "@types/sql.js": "^1.4.9",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "esbuild": "^0.25.9",
     "prettier": "^3.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.3",

@@ -17,7 +17,7 @@ This is a modern TypeScript implementation for generating Anki `.apkg` files wit
 **How it works:**
 1. SQLite database created in memory using sql.js
 2. Media files fetched on-demand via `MediaResolver`
-3. ZIP created with archiver, streaming directly to output
+3. ZIP created with fflate, streaming directly to output
 4. Database added at the end after all media files
 
 ### 2. In-Memory SQLite
@@ -77,7 +77,7 @@ anki-writer/
 
 ### Production
 - **sql.js** (^1.11.0): In-memory SQLite database
-- **archiver** (^7.0.1): Streaming ZIP creation
+- **fflate** (^0.8.2): Streaming ZIP creation
 
 ### Development
 - **typescript** (^5.6.0): TypeScript compiler
@@ -178,7 +178,7 @@ id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, 
 
 ### Memory Usage
 - SQLite database: ~1-5 MB for typical decks
-- Media streaming: ~10-50 MB buffer (archiver internal)
+- Media streaming: ~10-50 MB buffer (fflate internal)
 - Total: O(notes) for database + O(1) for streaming
 
 ### Time Complexity
@@ -304,7 +304,7 @@ const buffer = Buffer.concat(chunks);
 - [Anki File Format Documentation](https://github.com/ankidroid/Anki-Android/wiki/Database-Structure)
 - [genanki Python Library](https://github.com/kerrickstaley/genanki)
 - [sql.js Documentation](https://sql.js.org/)
-- [archiver Documentation](https://www.archiverjs.com/)
+- [fflate Documentation](https://github.com/101arrowz/fflate)
 
 ## License
 

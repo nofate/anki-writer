@@ -323,7 +323,7 @@ The `.apkg` file is a ZIP archive containing:
 ## Architecture
 
 - **database.ts**: SQLite database creation using sql.js (in-memory)
-- **zip-writer.ts**: Streaming ZIP creation using archiver
+- **zip-writer.ts**: Streaming ZIP creation using fflate
 - **utils.ts**: ID generation, GUID creation, media extraction
 - **types.ts**: TypeScript type definitions
 - **index.ts**: Main package writer class

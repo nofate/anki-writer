@@ -1,9 +1,10 @@
 /**
  * Streaming ZIP writer for Anki .apkg files
- * Uses archiver to create ZIP in streaming manner without disk I/O
+ * Uses fflate to create ZIP in streaming manner without disk I/O
  */
 
-import archiver from 'archiver';
+import { Zip, ZipDeflate } from 'fflate';
+import { once } from 'node:events';
 import { Readable } from 'node:stream';
 
 /**
@@ -19,20 +20,37 @@ export interface MediaEntry {
  * Streaming ZIP writer for .apkg files
  */
 export class ApkgZipWriter {
-  private archive: archiver.Archiver;
+  private zip: Zip;
   private finalized = false;
+  private writeChain: Promise<void> = Promise.resolve();
+  private zipDone: Promise<void>;
+  private zipDoneResolve?: () => void;
+  private zipDoneReject?: (err: Error) => void;
+  private zipDoneSettled = false;
 
   constructor(private output: NodeJS.WritableStream) {
-    this.archive = archiver('zip', {
-      zlib: { level: 9 } // Maximum compression
+    this.zipDone = new Promise((resolve, reject) => {
+      this.zipDoneResolve = resolve;
+      this.zipDoneReject = reject;
     });
 
-    // Pipe archive to output stream
-    this.archive.pipe(output);
+    this.output.once('error', (err) => {
+      this.rejectZipDone(err);
+    });
 
-    // Handle errors
-    this.archive.on('error', (err) => {
-      throw err;
+    this.zip = new Zip((err, data, final) => {
+      if (err) {
+        this.rejectZipDone(err);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        this.enqueueWrite(data);
+      }
+
+      if (final) {
+        this.resolveZipDone();
+      }
     });
   }
 
@@ -42,10 +60,8 @@ export class ApkgZipWriter {
   addDatabase(data: Uint8Array): Promise<void> {
     if (this.finalized) throw new Error('Archive already finalized');
 
-    // Convert Uint8Array to Buffer for archiver
-    const buffer = Buffer.from(data);
-
-    this.archive.append(buffer, { name: 'collection.anki2' });
+    const entry = this.createEntry('collection.anki2');
+    entry.push(data, true);
     return Promise.resolve();
   }
 
@@ -59,27 +75,31 @@ export class ApkgZipWriter {
     if (this.finalized) throw new Error('Archive already finalized');
 
     return new Promise((resolve, reject) => {
-      // Ensure stream is a Node.js Readable, not Web API ReadableStream
+      const entry = this.createEntry(index.toString());
+
       const readableStream = stream instanceof Readable ? stream : Readable.from(stream);
 
-      // Set up error handler
+      const pump = async (): Promise<void> => {
+        try {
+          for await (const chunk of readableStream) {
+            if (typeof chunk === 'string') {
+              entry.push(Buffer.from(chunk), false);
+            } else {
+              entry.push(chunk, false);
+            }
+          }
+          entry.push(new Uint8Array(0), true);
+          resolve();
+        } catch (err) {
+          reject(err instanceof Error ? err : new Error('Failed to read media stream'));
+        }
+      };
+
       readableStream.once('error', (err) => {
         reject(err);
       });
 
-      // Set up end handler - must be before append() call
-      readableStream.once('end', () => {
-        resolve();
-      });
-
-      // Check if stream is already ended/destroyed
-      if (readableStream.readableEnded || readableStream.destroyed) {
-        resolve();
-        return;
-      }
-
-      // archiver handles the stream internally and will queue it
-      this.archive.append(readableStream, { name: index.toString() });
+      void pump();
     });
   }
 
@@ -90,7 +110,7 @@ export class ApkgZipWriter {
   async addMediaFiles(entries: MediaEntry[]): Promise<void> {
     if (this.finalized) throw new Error('Archive already finalized');
 
-    // Process media files - archiver handles internal queueing
+    // Process media files in parallel to keep throughput
     const promises = entries.map((entry) => this.addMediaFile(entry.index, entry.stream));
 
     await Promise.all(promises);
@@ -103,7 +123,8 @@ export class ApkgZipWriter {
     if (this.finalized) throw new Error('Archive already finalized');
 
     const json = JSON.stringify(manifest);
-    this.archive.append(json, { name: 'media' });
+    const entry = this.createEntry('media');
+    entry.push(Buffer.from(json), true);
     return Promise.resolve();
   }
 
@@ -115,23 +136,13 @@ export class ApkgZipWriter {
 
     this.finalized = true;
 
-    // Wait for both archive finalization AND output stream to finish
-    return new Promise((resolve, reject) => {
-      // Set up output stream listeners first
-      this.output.once('finish', resolve);
-      this.output.once('error', reject);
+    this.zip.end();
 
-      // Set up archive listener for completion
-      this.archive.once('end', () => {
-        // Archive has written everything to output stream
-        // Output stream should emit 'finish' soon
-      });
+    await this.zipDone;
+    await this.writeChain;
 
-      this.archive.once('error', reject);
-
-      // Finalize the archive (this starts the finalization process)
-      this.archive.finalize().catch(reject);
-    });
+    this.output.end();
+    await once(this.output, 'finish');
   }
 
   /**
@@ -139,6 +150,34 @@ export class ApkgZipWriter {
    */
   isFinalized(): boolean {
     return this.finalized;
+  }
+
+  private createEntry(name: string): ZipDeflate {
+    const entry = new ZipDeflate(name, { level: 9 });
+    this.zip.add(entry);
+    return entry;
+  }
+
+  private enqueueWrite(data: Uint8Array): void {
+    this.writeChain = this.writeChain.then(() => this.writeChunk(data));
+  }
+
+  private async writeChunk(data: Uint8Array): Promise<void> {
+    if (!this.output.write(data)) {
+      await once(this.output, 'drain');
+    }
+  }
+
+  private resolveZipDone(): void {
+    if (this.zipDoneSettled) return;
+    this.zipDoneSettled = true;
+    this.zipDoneResolve?.();
+  }
+
+  private rejectZipDone(err: Error): void {
+    if (this.zipDoneSettled) return;
+    this.zipDoneSettled = true;
+    this.zipDoneReject?.(err);
   }
 }
 
