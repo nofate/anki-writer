@@ -97,7 +97,7 @@ export class AnkiPackageWriter {
   }
 
   /**
-   * Write media files to ZIP asynchronously
+   * Write media files to ZIP in batches to avoid OOM with large decks
    */
   private async writeMediaFiles(): Promise<void> {
     const filenames = Array.from(this.mediaFiles);
@@ -106,15 +106,18 @@ export class AnkiPackageWriter {
       return;
     }
 
-    // Fetch and write each media file to ZIP as soon as it's ready
-    const writePromises = filenames.map(async (filename, index) => {
-      const stream = await this.mediaResolver(filename);
-      await this.zipWriter.addMediaFile(index, stream);
-      console.log(`Added media file to ZIP: ${filename} (index: ${index})`);
-    });
-
-    // Wait for all media files to be written
-    await Promise.all(writePromises);
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < filenames.length; i += BATCH_SIZE) {
+      const batch = filenames.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (filename, j) => {
+          const index = i + j;
+          const stream = await this.mediaResolver(filename);
+          await this.zipWriter.addMediaFile(index, stream);
+          console.log(`Added media file to ZIP: ${filename} (index: ${index})`);
+        })
+      );
+    }
   }
 
   /**

@@ -3,9 +3,10 @@
  * Uses fflate to create ZIP in streaming manner without disk I/O
  */
 
-import { Zip, ZipDeflate } from 'fflate';
+import { Zip, ZipDeflate, ZipPassThrough } from 'fflate/browser';
 import { once } from 'node:events';
 import { Readable } from 'node:stream';
+
 
 /**
  * Media file entry for ZIP
@@ -75,7 +76,7 @@ export class ApkgZipWriter {
     if (this.finalized) throw new Error('Archive already finalized');
 
     return new Promise((resolve, reject) => {
-      const entry = this.createEntry(index.toString());
+      const entry = this.createMediaEntry(index.toString());
 
       const readableStream = stream instanceof Readable ? stream : Readable.from(stream);
 
@@ -154,6 +155,12 @@ export class ApkgZipWriter {
 
   private createEntry(name: string): ZipDeflate {
     const entry = new ZipDeflate(name, { level: 9 });
+    this.zip.add(entry);
+    return entry;
+  }
+
+  private createMediaEntry(name: string): ZipPassThrough {
+    const entry = new ZipPassThrough(name);
     this.zip.add(entry);
     return entry;
   }
