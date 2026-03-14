@@ -1,6 +1,6 @@
 {
   "name": "anki-apkg-writer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Streaming TypeScript implementation for Anki .apkg file generation",
   "type": "module",
   "main": "dist/index.js",
