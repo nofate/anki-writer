@@ -36,7 +36,7 @@ export class ApkgZipWriter {
     });
 
     this.output.once('error', (err) => {
-      this.rejectZipDone(err);
+      this.rejectZipDone(err instanceof Error ? err : new Error(String(err)));
     });
 
     this.zip = new Zip((err, data, final) => {
@@ -86,7 +86,7 @@ export class ApkgZipWriter {
             if (typeof chunk === 'string') {
               entry.push(Buffer.from(chunk), false);
             } else {
-              entry.push(chunk, false);
+              entry.push(chunk as Uint8Array, false);
             }
           }
           entry.push(new Uint8Array(0), true);
