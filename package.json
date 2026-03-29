@@ -1,10 +1,27 @@
 {
-  "name": "anki-apkg-writer",
+  "name": "@nofate/anki-writer",
   "version": "1.1.0",
   "description": "Streaming TypeScript implementation for Anki .apkg file generation",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nofate/anki-writer.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "engines": {
     "node": ">=22.0.0"
   },
